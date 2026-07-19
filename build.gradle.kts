@@ -4,20 +4,30 @@ plugins {
 
 import org.gradle.api.tasks.JavaExec
 
-version = "0.1.0"
+version = "0.2.1"
 
-val josmJvmArgs = listOf(
+val josmDevProxyEnabled = providers.gradleProperty("josmDevProxyEnabled")
+    .map(String::toBoolean).orElse(true)
+val josmDevProxyHost = providers.gradleProperty("josmDevProxyHost").orElse("127.0.0.1")
+val josmDevProxyPort = providers.gradleProperty("josmDevProxyPort").orElse("7890")
+
+val josmJvmArgs = mutableListOf(
     "--add-exports=java.base/sun.security.action=ALL-UNNAMED",
     "--add-exports=java.desktop/com.sun.imageio.plugins.jpeg=ALL-UNNAMED",
     "--add-exports=java.desktop/com.sun.imageio.spi=ALL-UNNAMED",
     "-Dfile.encoding=UTF-8",
     "-Dsun.stdout.encoding=UTF-8",
     "-Dsun.stderr.encoding=UTF-8",
-    "-Dhttp.proxyHost=127.0.0.1",
-    "-Dhttp.proxyPort=7890",
-    "-Dhttps.proxyHost=127.0.0.1",
-    "-Dhttps.proxyPort=7890",
 )
+
+if (josmDevProxyEnabled.get()) {
+    josmJvmArgs += listOf(
+        "-Dhttp.proxyHost=${josmDevProxyHost.get()}",
+        "-Dhttp.proxyPort=${josmDevProxyPort.get()}",
+        "-Dhttps.proxyHost=${josmDevProxyHost.get()}",
+        "-Dhttps.proxyPort=${josmDevProxyPort.get()}",
+    )
+}
 
 repositories {
     maven {
@@ -26,19 +36,32 @@ repositories {
     mavenCentral()
 }
 
+val profileTests by tasks.registering(JavaExec::class) {
+    group = "verification"
+    description = "Runs the dependency-free account profile unit tests"
+    dependsOn(tasks.named("testClasses"))
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass.set("com.example.josm.accountmanager.AccountProfileTest")
+}
+
+tasks.named("check") {
+    dependsOn(profileTests)
+}
+
 josm {
     pluginName = "account_manager"
     josmCompileVersion = "19555"
-    initialPreferences.set(
-        """
-        <tag key="proxy.policy" value="use-http-proxy"/>
-        <tag key="proxy.http.host" value="127.0.0.1"/>
-        <tag key="proxy.http.port" value="7890"/>
-        """.trimIndent()
-    )
-
+    if (josmDevProxyEnabled.get()) {
+        initialPreferences.set(
+            """
+            <tag key="proxy.policy" value="use-http-proxy"/>
+            <tag key="proxy.http.host" value="${josmDevProxyHost.get()}"/>
+            <tag key="proxy.http.port" value="${josmDevProxyPort.get()}"/>
+            """.trimIndent()
+        )
+    }
     manifest {
-        description = "A minimal Account Manager plugin for JOSM"
+        description = "Manage and switch multiple OAuth token profiles for OSM-compatible platforms"
         mainClass = "com.example.josm.accountmanager.AccountManagerPlugin"
         minJosmVersion = "19555"
         author = "account_manager contributors"

@@ -1,62 +1,85 @@
-# Account Manager — JOSM 插件最小实例
+# Account Manager — JOSM 多账号插件
 
-这是一个可被 JOSM 加载的最小插件。加载后，它会在 **工具** 菜单中添加
-**Account Manager: Hello**，点击后显示运行提示。
+Account Manager 让 JOSM 保存并切换多个 OSM 兼容平台账号。每个配置包含：
 
-## 环境与本地缓存
+- 自定义配置名称
+- 平台（OSM、OGF、OHM 或自定义）
+- OSM API 地址
+- OAuth 2.0 Access Token
+
+内置平台地址：
+
+| 平台 | API 地址 |
+| --- | --- |
+| OpenStreetMap (OSM) | `https://api.openstreetmap.org/api` |
+| OpenGeofiction (OGF) | `https://opengeofiction.net/api` |
+| OpenHistoricalMap (OHM) | `https://www.openhistoricalmap.org/api` |
+
+## 功能
+
+- 添加、编辑、删除任意数量的账号配置
+- Token 字段全程遮罩，账号列表不显示 Token 内容
+- Token 交由当前 JOSM 凭据管理器保存，普通配置元数据中不含 Token
+- 一键激活配置，同时更新 JOSM API 地址、OAuth 2.0 认证方式和当前 Access Token
+- 双击配置也可快速激活
+- 自定义平台和 API 地址，支持其他 OSM Rails Port 实例
+
+> 注意：JOSM 自带的默认凭据后端可能仍将敏感数据保存在本地偏好设置中。若安装了提供系统密钥环/加密存储的 JOSM 凭据插件，本插件会自动使用该后端。
+
+## 使用
+
+1. 安装插件并重启 JOSM。
+2. 打开 **工具 → Account Manager...**。
+3. 点击 **Add**，填写名称、平台和该平台签发的 OAuth 2.0 Access Token。
+4. 选中配置后点击 **Activate**，或双击配置。
+5. 此后的下载和上传会使用已激活平台与账号。
+
+切换只影响后续 API 请求，不会迁移或改写当前已打开的数据图层。上传前应确认图层来源与当前激活平台一致，避免将一个平台的数据上传到另一个平台。
+
+编辑已有配置时将 Token 留空会保留原 Token。删除配置会同时请求当前 JOSM 凭据管理器删除对应 Token。
+
+## 开发环境
 
 - JDK 21
-- Gradle Wrapper 固定为 8.14.3
-- JOSM 编译版本固定为 19555
-- Gradle、官方 JOSM Gradle 插件和 JOSM 19555 的缓存均保存在项目内的
-  `.gradle-user-home/`
+- Gradle Wrapper 8.14.3
+- JOSM 编译版本 19555
 
-Wrapper 默认使用项目内缓存，不依赖用户目录中的 `~/.gradle`。该缓存目录属于本机构建
-数据，已被 `.gitignore` 排除；如果要把项目复制到另一台电脑并保持完全离线，需要同时
-复制 `.gradle-user-home`。
-
-## 一条命令启动开发实例
+启动独立开发实例：
 
 ```powershell
 .\gradlew.bat runJosm --offline
 ```
 
-该命令会自动编译插件并启动使用临时配置目录的全新 JOSM。修改代码后，关闭 JOSM，
-再次执行同一条命令即可。
+开发实例默认通过 `127.0.0.1:7890` HTTP 代理联网。可在 `gradle.properties` 中修改：
 
-构建已为 Java 21 自动加入 JOSM 19555 所需的 `--add-exports` JVM 参数，无需手工输入。
-命令行的 `--offline` 只禁止 Gradle 下载构建依赖。JOSM 本身保持联网，并通过
-`127.0.0.1:7890` HTTP 代理访问 OSM API、影像列表等网络资源。
-
-## 构建
-
-```powershell
-.\gradlew.bat clean build --offline
+```properties
+josmDevProxyEnabled=true
+josmDevProxyHost=127.0.0.1
+josmDevProxyPort=7890
 ```
 
-生成发布用插件：
+临时禁用代理时无需修改文件：
+
+```powershell
+.\gradlew.bat runJosm --offline -PjosmDevProxyEnabled=false
+```
+
+这些设置只用于 `runJosm`/`debugJosm` 创建的开发实例，不会由发布插件强制写入其他用户现有的 JOSM 配置。
+
+运行测试和构建：
+
+```powershell
+.\gradlew.bat clean check build --offline
+```
+
+生成发布包：
 
 ```powershell
 .\gradlew.bat dist --offline
 ```
 
-发布产物位于：
+产物位于 `build/dist/account_manager.jar`。
 
-```text
-build/dist/account_manager.jar
-```
+## 数据存储
 
-## 验证
-
-启动开发实例后，点击 **工具 → Account Manager: Hello**。看到
-“Account Manager plugin is running.” 即表示插件成功加载。
-
-## 项目结构
-
-```text
-src/main/java/com/example/josm/accountmanager/
-├── AccountManagerPlugin.java  # 插件入口与生命周期
-└── HelloAction.java           # 最小可见功能
-```
-
-后续开发时，建议把 `com.example` 改成你自己的反向域名包名。
+配置名称、平台、API 地址和内部 ID 保存在 JOSM 偏好设置的 `account-manager.profiles` 中。Token 使用独立的凭据键保存，并通过 JOSM `CredentialsManager` 读写；插件不会把 Token 放进账号配置列表。
