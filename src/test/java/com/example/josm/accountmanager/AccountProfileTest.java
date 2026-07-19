@@ -5,10 +5,11 @@ public final class AccountProfileTest {
     private AccountProfileTest() {
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         trimsMetadataAndTrailingSlashes();
         rejectsMissingNameAndInvalidUrl();
         unknownStoredPlatformFallsBackToCustom();
+        buildsAccountValidationUrl();
     }
 
     private static void trimsMetadataAndTrailingSlashes() {
@@ -29,6 +30,13 @@ public final class AccountProfileTest {
     private static void unknownStoredPlatformFallsBackToCustom() {
         requireEquals(PlatformPreset.CUSTOM, PlatformPreset.fromStoredValue("FUTURE_PLATFORM"));
         requireEquals(PlatformPreset.CUSTOM, PlatformPreset.fromStoredValue(null));
+    }
+
+    private static void buildsAccountValidationUrl() throws Exception {
+        requireEquals("https://api.openstreetmap.org/api/0.6/user/details",
+                AccountValidator.validationUrl("https://api.openstreetmap.org/api/").toString());
+        requireEquals("https://example.test/custom/api/0.6/user/details",
+                AccountValidator.validationUrl("https://example.test/custom/api").toString());
     }
 
     private static void requireEquals(Object expected, Object actual) {

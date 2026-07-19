@@ -4,7 +4,7 @@ plugins {
 
 import org.gradle.api.tasks.JavaExec
 
-version = "0.2.1"
+version = "0.3.0"
 
 val josmDevProxyEnabled = providers.gradleProperty("josmDevProxyEnabled")
     .map(String::toBoolean).orElse(true)

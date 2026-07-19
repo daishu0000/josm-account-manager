@@ -1,21 +1,23 @@
 package com.example.josm.accountmanager;
 
-import org.openstreetmap.josm.gui.MainApplication;
+import org.openstreetmap.josm.gui.preferences.PreferenceSetting;
 import org.openstreetmap.josm.plugins.Plugin;
 import org.openstreetmap.josm.plugins.PluginInformation;
 import org.openstreetmap.josm.tools.Logging;
 
-import javax.swing.JMenuItem;
-
 /** JOSM loads this class using the Plugin-Class manifest entry. */
 public final class AccountManagerPlugin extends Plugin {
-    private final JMenuItem menuItem;
+    private final ProfileRepository repository;
 
     public AccountManagerPlugin(PluginInformation info) {
         super(info);
-        ProfileRepository repository = new ProfileRepository();
+        repository = new ProfileRepository();
         restoreActiveProfile(repository);
-        menuItem = MainApplication.getMenu().toolsMenu.add(new ManageAccountsAction(repository));
+    }
+
+    @Override
+    public PreferenceSetting getPreferenceSetting() {
+        return new AccountManagerPreference(repository);
     }
 
     private static void restoreActiveProfile(ProfileRepository repository) {
@@ -33,8 +35,4 @@ public final class AccountManagerPlugin extends Plugin {
                 });
     }
 
-    /** Allows JOSM to unload/reload the plugin without leaving its menu item behind. */
-    public void preReloadCleanup() {
-        MainApplication.getMenu().toolsMenu.remove(menuItem);
-    }
 }

@@ -24,6 +24,7 @@ import org.openstreetmap.josm.tools.Logging;
 final class AccountManagerDialog extends JDialog {
     private final ProfileRepository repository;
     private final AccountActivator activator;
+    private final AccountValidator validator;
     private final ProfileTableModel model;
     private final JTable table;
     private final JLabel status = new JLabel(" ");
@@ -32,6 +33,7 @@ final class AccountManagerDialog extends JDialog {
         super(owner, tr("Account Manager"), ModalityType.APPLICATION_MODAL);
         this.repository = repository;
         this.activator = new AccountActivator(repository);
+        this.validator = new AccountValidator(repository);
         this.model = new ProfileTableModel(repository);
         this.table = new JTable(model);
         buildUi();
@@ -88,11 +90,13 @@ final class AccountManagerDialog extends JDialog {
         ProfileEditorDialog.Result result = new ProfileEditorDialog(original).show(this);
         if (result == null) return;
         try {
+            validator.validate(result.profile, result.token);
             repository.save(result.profile, result.token);
             model.reload();
             select(result.profile);
+            status.setText(tr("Account verified and saved."));
         } catch (Exception exception) {
-            showError(tr("Could not save the profile"), exception);
+            showError(tr("Could not verify or save the profile"), exception);
         } finally {
             if (result.token != null) java.util.Arrays.fill(result.token, '\0');
         }
@@ -123,12 +127,13 @@ final class AccountManagerDialog extends JDialog {
                 tr("Switch account"), JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE);
         if (answer != JOptionPane.OK_OPTION) return;
         try {
+            validator.validate(selected, null);
             activator.activate(selected);
             model.fireTableDataChanged();
             select(selected);
-            updateStatus();
+            status.setText(tr("Account verified and activated."));
         } catch (Exception exception) {
-            showError(tr("Could not activate the profile"), exception);
+            showError(tr("Could not verify or activate the profile"), exception);
         }
     }
 
