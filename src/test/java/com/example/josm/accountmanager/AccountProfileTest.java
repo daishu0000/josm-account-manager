@@ -10,6 +10,8 @@ public final class AccountProfileTest {
         rejectsMissingNameAndInvalidUrl();
         unknownStoredPlatformFallsBackToCustom();
         buildsAccountValidationUrl();
+        defaultsOldProfilesToOAuth();
+        buildsBasicAuthorizationHeader();
     }
 
     private static void trimsMetadataAndTrailingSlashes() {
@@ -23,8 +25,21 @@ public final class AccountProfileTest {
     }
 
     private static void rejectsMissingNameAndInvalidUrl() {
-        requireThrows(() -> AccountProfile.create(" ", PlatformPreset.OSM, PlatformPreset.OSM.apiUrl()));
-        requireThrows(() -> AccountProfile.create("test", PlatformPreset.CUSTOM, "not-a-url"));
+        requireThrows(() -> AccountProfile.create(" ", PlatformPreset.OSM, PlatformPreset.OSM.apiUrl(),
+                AuthenticationMethod.OAUTH20));
+        requireThrows(() -> AccountProfile.create("test", PlatformPreset.CUSTOM, "not-a-url",
+                AuthenticationMethod.BASIC));
+    }
+
+    private static void defaultsOldProfilesToOAuth() {
+        requireEquals(AuthenticationMethod.OAUTH20, AuthenticationMethod.fromStoredValue(null));
+        requireEquals(AuthenticationMethod.OAUTH20, AuthenticationMethod.fromStoredValue("UNKNOWN"));
+        requireEquals(AuthenticationMethod.BASIC, AuthenticationMethod.fromStoredValue("BASIC"));
+    }
+
+    private static void buildsBasicAuthorizationHeader() {
+        requireEquals("Basic dXNlcjpwYXNz",
+                AccountValidator.basicAuthorizationHeader("user", "pass".toCharArray()));
     }
 
     private static void unknownStoredPlatformFallsBackToCustom() {

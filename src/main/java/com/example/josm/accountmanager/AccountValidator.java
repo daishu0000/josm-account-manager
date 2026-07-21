@@ -5,6 +5,9 @@ import static org.openstreetmap.josm.tools.I18n.tr;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
+import java.net.PasswordAuthentication;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 
 import org.openstreetmap.josm.data.oauth.IOAuthToken;
 import org.openstreetmap.josm.data.oauth.OAuth20Token;
@@ -21,22 +24,21 @@ final class AccountValidator {
         this.repository = repository;
     }
 
-    void validate(AccountProfile profile, char[] newToken)
+    void validate(AccountProfile profile, String username, char[] newSecret)
             throws IOException, CredentialsAgentException {
-        String bearerToken = bearerToken(profile, newToken);
         URL validationUrl = validationUrl(profile.apiUrl());
         HttpClient client = HttpClient.create(validationUrl, "GET")
                 .setConnectTimeout(TIMEOUT_MILLIS)
                 .setReadTimeout(TIMEOUT_MILLIS)
                 .setAccept("application/xml")
-                .setHeader("Authorization", "Bearer " + bearerToken)
+                .setHeader("Authorization", authorizationHeader(profile, username, newSecret))
                 .setReasonForRequest(tr("Validate account profile"));
         try {
             HttpClient.Response response = client.connect();
             int responseCode = response.getResponseCode();
             if (responseCode >= 200 && responseCode < 300) return;
             if (responseCode == 401 || responseCode == 403) {
-                throw new IOException(tr("The server rejected this token (HTTP {0}).", responseCode));
+                throw new IOException(tr("The server rejected these credentials (HTTP {0}).", responseCode));
             }
             if (responseCode == 404) {
                 throw new IOException(tr("The API URL is not an OSM-compatible API endpoint (HTTP 404)."));
@@ -46,6 +48,33 @@ final class AccountValidator {
         } finally {
             client.disconnect();
         }
+    }
+
+    private String authorizationHeader(AccountProfile profile, String username, char[] newSecret)
+            throws CredentialsAgentException {
+        if (profile.authenticationMethod() == AuthenticationMethod.BASIC) {
+            PasswordAuthentication credentials = basicCredentials(profile, username, newSecret);
+            return basicAuthorizationHeader(credentials.getUserName(), credentials.getPassword());
+        }
+        return "Bearer " + bearerToken(profile, newSecret);
+    }
+
+    static String basicAuthorizationHeader(String username, char[] password) {
+        String value = username + ":" + new String(password);
+        return "Basic " + Base64.getEncoder().encodeToString(value.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private PasswordAuthentication basicCredentials(AccountProfile profile, String username, char[] newPassword)
+            throws CredentialsAgentException {
+        PasswordAuthentication stored = repository.basicCredentialsFor(profile);
+        String effectiveUsername = username == null || username.trim().isEmpty()
+                ? stored == null ? "" : stored.getUserName() : username.trim();
+        char[] effectivePassword = newPassword != null && newPassword.length > 0
+                ? newPassword : stored == null ? null : stored.getPassword();
+        if (effectiveUsername.isEmpty() || effectivePassword == null || effectivePassword.length == 0) {
+            throw new IllegalStateException(tr("This profile has no username and password."));
+        }
+        return new PasswordAuthentication(effectiveUsername, effectivePassword);
     }
 
     private String bearerToken(AccountProfile profile, char[] newToken)

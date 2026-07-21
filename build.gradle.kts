@@ -4,7 +4,7 @@ plugins {
 
 import org.gradle.api.tasks.JavaExec
 
-version = "0.3.0"
+version = "0.4.0"
 
 val josmDevProxyEnabled = providers.gradleProperty("josmDevProxyEnabled")
     .map(String::toBoolean).orElse(true)
@@ -61,7 +61,7 @@ josm {
         )
     }
     manifest {
-        description = "Manage and switch multiple OAuth token profiles for OSM-compatible platforms"
+        description = "Manage and switch multiple account profiles for OSM-compatible platforms"
         mainClass = "com.example.josm.accountmanager.AccountManagerPlugin"
         minJosmVersion = "19555"
         author = "account_manager contributors"

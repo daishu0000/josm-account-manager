@@ -4,32 +4,42 @@ import java.net.URI;
 import java.util.Objects;
 import java.util.UUID;
 
-/** Non-secret profile metadata. The token is deliberately not a field of this class. */
+/** Non-secret profile metadata. Passwords and tokens are deliberately not fields of this class. */
 final class AccountProfile {
     private final String id;
     private final String name;
     private final PlatformPreset platform;
     private final String apiUrl;
+    private final AuthenticationMethod authenticationMethod;
 
     AccountProfile(String id, String name, PlatformPreset platform, String apiUrl) {
+        this(id, name, platform, apiUrl, AuthenticationMethod.OAUTH20);
+    }
+
+    AccountProfile(String id, String name, PlatformPreset platform, String apiUrl,
+            AuthenticationMethod authenticationMethod) {
         this.id = requireText(id, "Profile id");
         this.name = requireText(name, "Name");
         this.platform = Objects.requireNonNull(platform, "platform");
         this.apiUrl = normalizeApiUrl(apiUrl);
+        this.authenticationMethod = Objects.requireNonNull(authenticationMethod, "authenticationMethod");
     }
 
-    static AccountProfile create(String name, PlatformPreset platform, String apiUrl) {
-        return new AccountProfile(UUID.randomUUID().toString(), name, platform, apiUrl);
+    static AccountProfile create(String name, PlatformPreset platform, String apiUrl,
+            AuthenticationMethod authenticationMethod) {
+        return new AccountProfile(UUID.randomUUID().toString(), name, platform, apiUrl, authenticationMethod);
     }
 
-    AccountProfile withDetails(String newName, PlatformPreset newPlatform, String newApiUrl) {
-        return new AccountProfile(id, newName, newPlatform, newApiUrl);
+    AccountProfile withDetails(String newName, PlatformPreset newPlatform, String newApiUrl,
+            AuthenticationMethod newAuthenticationMethod) {
+        return new AccountProfile(id, newName, newPlatform, newApiUrl, newAuthenticationMethod);
     }
 
     String id() { return id; }
     String name() { return name; }
     PlatformPreset platform() { return platform; }
     String apiUrl() { return apiUrl; }
+    AuthenticationMethod authenticationMethod() { return authenticationMethod; }
 
     String credentialKey() {
         return "account-manager-" + id + ".invalid";

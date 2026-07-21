@@ -1,6 +1,8 @@
 package com.example.josm.accountmanager;
 
 import java.net.URI;
+import java.net.Authenticator.RequestorType;
+import java.net.PasswordAuthentication;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -30,7 +32,8 @@ final class ProfileRepository {
             try {
                 profiles.add(new AccountProfile(
                         values.get("id"), values.get("name"),
-                        PlatformPreset.fromStoredValue(values.get("platform")), values.get("apiUrl")));
+                        PlatformPreset.fromStoredValue(values.get("platform")), values.get("apiUrl"),
+                        AuthenticationMethod.fromStoredValue(values.get("authenticationMethod"))));
             } catch (IllegalArgumentException ignored) {
                 // A malformed entry must not prevent users from managing the remaining profiles.
             }
@@ -38,18 +41,14 @@ final class ProfileRepository {
         return profiles;
     }
 
-    void save(AccountProfile profile, char[] newToken) throws CredentialsAgentException, OAuth20Exception {
-        if (newToken != null && newToken.length > 0) {
-            CredentialsManager.getInstance().storeOAuthAccessToken(
-                    profile.credentialKey(), createToken(profile.apiUrl(), new String(newToken)));
+    void save(AccountProfile profile, String username, char[] newSecret)
+            throws CredentialsAgentException, OAuth20Exception {
+        if (profile.authenticationMethod() == AuthenticationMethod.BASIC) {
+            saveBasicCredentials(profile, username, newSecret);
+            CredentialsManager.getInstance().storeOAuthAccessToken(profile.credentialKey(), null);
         } else {
-            IOAuthToken existingToken = tokenFor(profile);
-            if (existingToken instanceof OAuth20Token) {
-                // The signing guard is tied to the API host, so editing a URL must also rebind the token.
-                String bearerToken = ((OAuth20Token) existingToken).getBearerToken();
-                CredentialsManager.getInstance().storeOAuthAccessToken(
-                        profile.credentialKey(), createToken(profile.apiUrl(), bearerToken));
-            }
+            saveOAuthToken(profile, newSecret);
+            clearBasicCredentials(profile.credentialKey());
         }
         List<AccountProfile> profiles = findAll();
         profiles.removeIf(existing -> existing.id().equals(profile.id()));
@@ -61,9 +60,19 @@ final class ProfileRepository {
         return CredentialsManager.getInstance().lookupOAuthAccessToken(profile.credentialKey());
     }
 
-    boolean hasToken(AccountProfile profile) {
+    PasswordAuthentication basicCredentialsFor(AccountProfile profile) throws CredentialsAgentException {
+        PasswordAuthentication credentials = CredentialsManager.getInstance()
+                .lookup(RequestorType.SERVER, profile.credentialKey());
+        return credentials == null || credentials.getUserName() == null
+                || credentials.getUserName().trim().isEmpty()
+                || credentials.getPassword() == null || credentials.getPassword().length == 0
+                ? null : credentials;
+    }
+
+    boolean hasCredentials(AccountProfile profile) {
         try {
-            return tokenFor(profile) != null;
+            return profile.authenticationMethod() == AuthenticationMethod.BASIC
+                    ? basicCredentialsFor(profile) != null : tokenFor(profile) != null;
         } catch (CredentialsAgentException exception) {
             return false;
         }
@@ -71,6 +80,7 @@ final class ProfileRepository {
 
     void delete(AccountProfile profile) throws CredentialsAgentException {
         CredentialsManager.getInstance().storeOAuthAccessToken(profile.credentialKey(), null);
+        clearBasicCredentials(profile.credentialKey());
         List<AccountProfile> profiles = findAll();
         profiles.removeIf(existing -> existing.id().equals(profile.id()));
         saveMetadata(profiles);
@@ -95,9 +105,44 @@ final class ProfileRepository {
             row.put("name", profile.name());
             row.put("platform", profile.platform().name());
             row.put("apiUrl", profile.apiUrl());
+            row.put("authenticationMethod", profile.authenticationMethod().name());
             values.add(row);
         }
         Config.getPref().putListOfMaps(PROFILES_KEY, values);
+    }
+
+    private void saveOAuthToken(AccountProfile profile, char[] newToken)
+            throws CredentialsAgentException, OAuth20Exception {
+        if (newToken != null && newToken.length > 0) {
+            CredentialsManager.getInstance().storeOAuthAccessToken(
+                    profile.credentialKey(), createToken(profile.apiUrl(), new String(newToken)));
+            return;
+        }
+        IOAuthToken existingToken = tokenFor(profile);
+        if (existingToken instanceof OAuth20Token) {
+            // The signing guard is tied to the API host, so editing a URL must also rebind the token.
+            String bearerToken = ((OAuth20Token) existingToken).getBearerToken();
+            CredentialsManager.getInstance().storeOAuthAccessToken(
+                    profile.credentialKey(), createToken(profile.apiUrl(), bearerToken));
+        }
+    }
+
+    private void saveBasicCredentials(AccountProfile profile, String username, char[] newPassword)
+            throws CredentialsAgentException {
+        String normalizedUsername = username == null ? "" : username.trim();
+        PasswordAuthentication existing = basicCredentialsFor(profile);
+        char[] password = newPassword != null && newPassword.length > 0
+                ? newPassword : existing == null ? null : existing.getPassword();
+        if (normalizedUsername.isEmpty() || password == null || password.length == 0) {
+            throw new IllegalArgumentException("Username and password must not be empty");
+        }
+        CredentialsManager.getInstance().store(RequestorType.SERVER, profile.credentialKey(),
+                new PasswordAuthentication(normalizedUsername, password));
+    }
+
+    private static void clearBasicCredentials(String key) throws CredentialsAgentException {
+        CredentialsManager.getInstance().store(RequestorType.SERVER, key,
+                new PasswordAuthentication("", new char[0]));
     }
 
     private static IOAuthToken createToken(String apiUrl, String token) throws OAuth20Exception {

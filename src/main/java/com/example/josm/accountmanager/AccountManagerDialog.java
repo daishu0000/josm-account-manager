@@ -46,7 +46,9 @@ final class AccountManagerDialog extends JDialog {
         table.getColumnModel().getColumn(0).setPreferredWidth(45);
         table.getColumnModel().getColumn(1).setPreferredWidth(150);
         table.getColumnModel().getColumn(2).setPreferredWidth(100);
-        table.getColumnModel().getColumn(3).setPreferredWidth(280);
+        table.getColumnModel().getColumn(3).setPreferredWidth(130);
+        table.getColumnModel().getColumn(4).setPreferredWidth(280);
+        table.getColumnModel().getColumn(5).setPreferredWidth(90);
         add(new JScrollPane(table), BorderLayout.CENTER);
 
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.LEADING));
@@ -87,18 +89,18 @@ final class AccountManagerDialog extends JDialog {
     }
 
     private void editProfile(AccountProfile original) {
-        ProfileEditorDialog.Result result = new ProfileEditorDialog(original).show(this);
+        ProfileEditorDialog.Result result = new ProfileEditorDialog(original, repository).show(this);
         if (result == null) return;
         try {
-            validator.validate(result.profile, result.token);
-            repository.save(result.profile, result.token);
+            validator.validate(result.profile, result.username, result.secret);
+            repository.save(result.profile, result.username, result.secret);
             model.reload();
             select(result.profile);
             status.setText(tr("Account verified and saved."));
         } catch (Exception exception) {
             showError(tr("Could not verify or save the profile"), exception);
         } finally {
-            if (result.token != null) java.util.Arrays.fill(result.token, '\0');
+            if (result.secret != null) java.util.Arrays.fill(result.secret, '\0');
         }
     }
 
@@ -127,7 +129,7 @@ final class AccountManagerDialog extends JDialog {
                 tr("Switch account"), JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE);
         if (answer != JOptionPane.OK_OPTION) return;
         try {
-            validator.validate(selected, null);
+            validator.validate(selected, null, null);
             activator.activate(selected);
             model.fireTableDataChanged();
             select(selected);
@@ -156,9 +158,9 @@ final class AccountManagerDialog extends JDialog {
         if (selected == null) {
             status.setText(tr("Select a profile. Double-clicking also activates it."));
         } else {
-            status.setText(repository.hasToken(selected)
-                    ? tr("Token is stored in the current JOSM credential manager.")
-                    : tr("No token is stored. Edit this profile before activating it."));
+            status.setText(repository.hasCredentials(selected)
+                    ? tr("Credentials are stored in the current JOSM credential manager.")
+                    : tr("No credentials are stored. Edit this profile before activating it."));
         }
     }
 
@@ -171,7 +173,8 @@ final class AccountManagerDialog extends JDialog {
     private static final class ProfileTableModel extends AbstractTableModel {
         private final ProfileRepository repository;
         private List<AccountProfile> profiles = new ArrayList<>();
-        private final String[] columns = {tr("Active"), tr("Name"), tr("Platform"), tr("API URL"), tr("Token")};
+        private final String[] columns = {tr("Active"), tr("Name"), tr("Platform"),
+                tr("Authentication"), tr("API URL"), tr("Credentials")};
 
         ProfileTableModel(ProfileRepository repository) {
             this.repository = repository;
@@ -202,8 +205,9 @@ final class AccountManagerDialog extends JDialog {
                 case 0: return profile.id().equals(repository.activeProfileId()) ? "✓" : "";
                 case 1: return profile.name();
                 case 2: return profile.platform().toString();
-                case 3: return profile.apiUrl();
-                case 4: return repository.hasToken(profile) ? tr("Stored") : tr("Missing");
+                case 3: return profile.authenticationMethod().toString();
+                case 4: return profile.apiUrl();
+                case 5: return repository.hasCredentials(profile) ? tr("Stored") : tr("Missing");
                 default: return "";
             }
         }
