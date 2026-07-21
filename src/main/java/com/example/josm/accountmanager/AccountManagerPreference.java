@@ -8,7 +8,6 @@ import java.awt.Container;
 import java.awt.Window;
 
 import javax.swing.BorderFactory;
-import javax.swing.Box;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -54,10 +53,15 @@ final class AccountManagerPreference implements SubPreferenceSetting {
         section.add(summary, BorderLayout.CENTER);
         section.add(manage, BorderLayout.LINE_END);
 
-        Component glue = removeTrailingGlue(serverPanel);
-        serverPanel.add(section, GBC.eol().fill(GBC.HORIZONTAL).insets(-5, 0, 0, 0));
-        serverPanel.add(glue == null ? Box.createVerticalGlue() : glue,
-                GBC.eol().fill(GBC.BOTH).weight(0, 1));
+        AuthenticationPreferencesPanel authenticationPanel =
+                findAuthenticationPanel(serverPanel);
+        if (authenticationPanel == null || authenticationPanel.getParent() == null) return;
+
+        Container nativeSettings = authenticationPanel.getParent();
+        int authenticationIndex = nativeSettings.getComponentZOrder(authenticationPanel);
+        nativeSettings.add(section,
+                GBC.eop().fill(GBC.HORIZONTAL).insets(0, 8, 0, 8),
+                authenticationIndex + 1);
         serverPanel.revalidate();
         serverPanel.repaint();
     }
@@ -91,6 +95,20 @@ final class AccountManagerPreference implements SubPreferenceSetting {
         }
     }
 
+    private static AuthenticationPreferencesPanel findAuthenticationPanel(Container parent) {
+        for (Component component : parent.getComponents()) {
+            if (component instanceof AuthenticationPreferencesPanel) {
+                return (AuthenticationPreferencesPanel) component;
+            }
+            if (component instanceof Container) {
+                AuthenticationPreferencesPanel found =
+                        findAuthenticationPanel((Container) component);
+                if (found != null) return found;
+            }
+        }
+        return null;
+    }
+
     private void updateSummary(JLabel summary) {
         String activeId = repository.activeProfileId();
         String activeName = repository.findAll().stream()
@@ -101,17 +119,6 @@ final class AccountManagerPreference implements SubPreferenceSetting {
         summary.setText(activeName == null
                 ? tr("No account profile is active.")
                 : tr("Active account: {0}", activeName));
-    }
-
-    private static Component removeTrailingGlue(Container panel) {
-        Component[] components = panel.getComponents();
-        if (components.length == 0) return null;
-        Component last = components[components.length - 1];
-        if (last instanceof Box.Filler) {
-            panel.remove(last);
-            return last;
-        }
-        return null;
     }
 
     private static PreferenceTabbedPane.PreferencePanel findServerPanel(
