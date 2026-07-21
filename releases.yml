@@ -1,0 +1,6 @@
+releases:
+  - label: 0.1.0
+    minJosmVersion: 19555
+    description: |
+      支持保存、验证和快速切换多个 OSM 兼容平台账号。
+      支持 OAuth 2.0 与用户名密码认证，并同步更新 JOSM API 和凭据配置。

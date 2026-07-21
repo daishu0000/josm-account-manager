@@ -3,8 +3,12 @@ plugins {
 }
 
 import org.gradle.api.tasks.JavaExec
+import org.openstreetmap.josm.gradle.plugin.task.github.PublishToGithubReleaseTask
 
-version = "0.4.0"
+version = "0.1.0"
+
+val releaseJarName = "account_manager.jar"
+val releaseJarPath = layout.buildDirectory.file("dist/$releaseJarName")
 
 val josmDevProxyEnabled = providers.gradleProperty("josmDevProxyEnabled")
     .map(String::toBoolean).orElse(true)
@@ -66,6 +70,11 @@ josm {
         minJosmVersion = "19555"
         author = "account_manager contributors"
     }
+    github {
+        repositoryOwner = "daishu0000"
+        repositoryName = "josm-account-manager"
+        targetCommitish = "main"
+    }
 }
 
 tasks.named<JavaExec>("runJosm") {
@@ -74,4 +83,17 @@ tasks.named<JavaExec>("runJosm") {
 
 tasks.named<JavaExec>("debugJosm") {
     jvmArgs(josmJvmArgs)
+}
+
+tasks.named<PublishToGithubReleaseTask>("publishToGithubRelease") {
+    dependsOn("dist")
+    mustRunAfter("createGithubRelease")
+    localJarPath = releaseJarPath.get().asFile.absolutePath
+    remoteJarName = releaseJarName
+}
+
+tasks.register("release") {
+    group = "release"
+    description = "Build dist JAR, create GitHub release, and upload $releaseJarName"
+    dependsOn("createGithubRelease", "publishToGithubRelease")
 }
