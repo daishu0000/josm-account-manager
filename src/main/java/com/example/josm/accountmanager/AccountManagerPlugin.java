@@ -12,7 +12,17 @@ public final class AccountManagerPlugin extends Plugin {
     public AccountManagerPlugin(PluginInformation info) {
         super(info);
         repository = new ProfileRepository();
+        importStoredJosmAccounts(repository);
         restoreActiveProfile(repository);
+    }
+
+    private static void importStoredJosmAccounts(ProfileRepository repository) {
+        try {
+            repository.importStoredJosmAccounts();
+        } catch (RuntimeException | org.openstreetmap.josm.io.auth.CredentialsAgentException exception) {
+            // A broken or unavailable credential backend must not prevent JOSM from starting.
+            Logging.error(exception);
+        }
     }
 
     @Override

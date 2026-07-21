@@ -19,6 +19,20 @@ enum PlatformPreset {
         return apiUrl;
     }
 
+    static PlatformPreset fromApiUrl(String apiUrl) {
+        String normalized = AccountProfile.normalizeApiUrl(apiUrl);
+        for (PlatformPreset preset : values()) {
+            if (!preset.apiUrl.isEmpty() && preset.apiUrl.equalsIgnoreCase(normalized)) {
+                return preset;
+            }
+        }
+        // OHM serves the same Rails API from both its website and dedicated API host.
+        if ("https://api.openhistoricalmap.org/api".equalsIgnoreCase(normalized)) {
+            return OHM;
+        }
+        return CUSTOM;
+    }
+
     static PlatformPreset fromStoredValue(String value) {
         try {
             return valueOf(value);

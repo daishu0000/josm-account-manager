@@ -18,6 +18,18 @@ public final class AccountProfileTest {
         defaultsOldProfilesToOAuth();
         buildsBasicAuthorizationHeader();
         parsesVerifiedUserIdentity();
+        detectsKnownPlatformFromApiUrl();
+    }
+
+    private static void detectsKnownPlatformFromApiUrl() {
+        requireEquals(PlatformPreset.OSM,
+                PlatformPreset.fromApiUrl("https://api.openstreetmap.org/api/"));
+        requireEquals(PlatformPreset.OHM,
+                PlatformPreset.fromApiUrl("https://api.openhistoricalmap.org/api/"));
+        requireEquals(PlatformPreset.OHM,
+                PlatformPreset.fromApiUrl("https://www.openhistoricalmap.org/api"));
+        requireEquals(PlatformPreset.CUSTOM,
+                PlatformPreset.fromApiUrl("https://example.test/api"));
     }
 
     private static void trimsMetadataAndTrailingSlashes() {
