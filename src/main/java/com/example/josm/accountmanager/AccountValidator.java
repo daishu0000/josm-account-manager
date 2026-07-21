@@ -3,16 +3,23 @@ package com.example.josm.accountmanager;
 import static org.openstreetmap.josm.tools.I18n.tr;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
 import java.net.PasswordAuthentication;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.openstreetmap.josm.data.osm.UserInfo;
 import org.openstreetmap.josm.data.oauth.IOAuthToken;
 import org.openstreetmap.josm.data.oauth.OAuth20Token;
+import org.openstreetmap.josm.io.OsmServerUserInfoReader;
 import org.openstreetmap.josm.io.auth.CredentialsAgentException;
 import org.openstreetmap.josm.tools.HttpClient;
+import org.openstreetmap.josm.tools.XmlUtils;
+import org.xml.sax.SAXException;
 
 /** Verifies that a profile can authenticate against its OSM-compatible API. */
 final class AccountValidator {
@@ -24,7 +31,7 @@ final class AccountValidator {
         this.repository = repository;
     }
 
-    void validate(AccountProfile profile, String username, char[] newSecret)
+    UserInfo validate(AccountProfile profile, String username, char[] newSecret)
             throws IOException, CredentialsAgentException {
         URL validationUrl = validationUrl(profile.apiUrl());
         HttpClient client = HttpClient.create(validationUrl, "GET")
@@ -36,7 +43,9 @@ final class AccountValidator {
         try {
             HttpClient.Response response = client.connect();
             int responseCode = response.getResponseCode();
-            if (responseCode >= 200 && responseCode < 300) return;
+            if (responseCode >= 200 && responseCode < 300) {
+                return parseUserInfo(response);
+            }
             if (responseCode == 401 || responseCode == 403) {
                 throw new IOException(tr("The server rejected these credentials (HTTP {0}).", responseCode));
             }
@@ -47,6 +56,23 @@ final class AccountValidator {
                     responseCode, response.getResponseMessage()));
         } finally {
             client.disconnect();
+        }
+    }
+
+    private static UserInfo parseUserInfo(HttpClient.Response response) throws IOException {
+        return parseUserInfo(response.getContent());
+    }
+
+    static UserInfo parseUserInfo(InputStream content) throws IOException {
+        try {
+            UserInfo userInfo = OsmServerUserInfoReader.buildFromXML(
+                    XmlUtils.parseSafeDOM(content));
+            if (userInfo.getDisplayName() == null || userInfo.getDisplayName().trim().isEmpty()) {
+                throw new IOException(tr("The account response does not contain a display name."));
+            }
+            return userInfo;
+        } catch (ParserConfigurationException | SAXException | RuntimeException exception) {
+            throw new IOException(tr("Could not parse the account information returned by the server."), exception);
         }
     }
 

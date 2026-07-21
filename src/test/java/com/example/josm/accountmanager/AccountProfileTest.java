@@ -1,5 +1,10 @@
 package com.example.josm.accountmanager;
 
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
+
+import org.openstreetmap.josm.data.osm.UserInfo;
+
 /** Dependency-free unit tests so the project remains fully buildable offline. */
 public final class AccountProfileTest {
     private AccountProfileTest() {
@@ -12,6 +17,7 @@ public final class AccountProfileTest {
         buildsAccountValidationUrl();
         defaultsOldProfilesToOAuth();
         buildsBasicAuthorizationHeader();
+        parsesVerifiedUserIdentity();
     }
 
     private static void trimsMetadataAndTrailingSlashes() {
@@ -40,6 +46,16 @@ public final class AccountProfileTest {
     private static void buildsBasicAuthorizationHeader() {
         requireEquals("Basic dXNlcjpwYXNz",
                 AccountValidator.basicAuthorizationHeader("user", "pass".toCharArray()));
+    }
+
+    private static void parsesVerifiedUserIdentity() throws Exception {
+        String xml = "<osm><user id=\"123\" display_name=\"Verified User\" "
+                + "account_created=\"2024-01-02T03:04:05Z\"/></osm>";
+        UserInfo userInfo = AccountValidator.parseUserInfo(
+                new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)));
+
+        requireEquals(123, userInfo.getId());
+        requireEquals("Verified User", userInfo.getDisplayName());
     }
 
     private static void unknownStoredPlatformFallsBackToCustom() {

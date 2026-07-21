@@ -17,6 +17,8 @@ import javax.swing.SwingUtilities;
 import org.openstreetmap.josm.gui.preferences.PreferenceTabbedPane;
 import org.openstreetmap.josm.gui.preferences.SubPreferenceSetting;
 import org.openstreetmap.josm.gui.preferences.TabPreferenceSetting;
+import org.openstreetmap.josm.gui.preferences.server.AuthenticationPreferencesPanel;
+import org.openstreetmap.josm.gui.preferences.server.OsmApiUrlInputPanel;
 import org.openstreetmap.josm.tools.GBC;
 
 /** Adds account management to JOSM's existing OSM Server preference page. */
@@ -45,7 +47,8 @@ final class AccountManagerPreference implements SubPreferenceSetting {
         updateSummary(summary);
         manage.addActionListener(event -> {
             Window owner = SwingUtilities.getWindowAncestor(gui);
-            new AccountManagerDialog(owner, repository).setVisible(true);
+            new AccountManagerDialog(owner, repository,
+                    () -> refreshNativeAccountPanel(serverPanel)).setVisible(true);
             updateSummary(summary);
         });
         section.add(summary, BorderLayout.CENTER);
@@ -57,6 +60,35 @@ final class AccountManagerPreference implements SubPreferenceSetting {
                 GBC.eol().fill(GBC.BOTH).weight(0, 1));
         serverPanel.revalidate();
         serverPanel.repaint();
+    }
+
+    private static void refreshNativeAccountPanel(Container serverPanel) {
+        refreshApiUrlPanels(serverPanel);
+        refreshAuthenticationPanels(serverPanel);
+        serverPanel.revalidate();
+        serverPanel.repaint();
+    }
+
+    private static void refreshApiUrlPanels(Container parent) {
+        for (Component component : parent.getComponents()) {
+            if (component instanceof OsmApiUrlInputPanel) {
+                ((OsmApiUrlInputPanel) component).initFromPreferences();
+            }
+            if (component instanceof Container) {
+                refreshApiUrlPanels((Container) component);
+            }
+        }
+    }
+
+    private static void refreshAuthenticationPanels(Container parent) {
+        for (Component component : parent.getComponents()) {
+            if (component instanceof AuthenticationPreferencesPanel) {
+                ((AuthenticationPreferencesPanel) component).initFromPreferences();
+            }
+            if (component instanceof Container) {
+                refreshAuthenticationPanels((Container) component);
+            }
+        }
     }
 
     private void updateSummary(JLabel summary) {

@@ -18,6 +18,7 @@ import javax.swing.JTable;
 import javax.swing.ListSelectionModel;
 import javax.swing.table.AbstractTableModel;
 
+import org.openstreetmap.josm.data.osm.UserInfo;
 import org.openstreetmap.josm.tools.Logging;
 
 /** Main account management window. */
@@ -25,15 +26,17 @@ final class AccountManagerDialog extends JDialog {
     private final ProfileRepository repository;
     private final AccountActivator activator;
     private final AccountValidator validator;
+    private final Runnable accountActivated;
     private final ProfileTableModel model;
     private final JTable table;
     private final JLabel status = new JLabel(" ");
 
-    AccountManagerDialog(Window owner, ProfileRepository repository) {
+    AccountManagerDialog(Window owner, ProfileRepository repository, Runnable accountActivated) {
         super(owner, tr("Account Manager"), ModalityType.APPLICATION_MODAL);
         this.repository = repository;
         this.activator = new AccountActivator(repository);
         this.validator = new AccountValidator(repository);
+        this.accountActivated = accountActivated;
         this.model = new ProfileTableModel(repository);
         this.table = new JTable(model);
         buildUi();
@@ -129,8 +132,9 @@ final class AccountManagerDialog extends JDialog {
                 tr("Switch account"), JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE);
         if (answer != JOptionPane.OK_OPTION) return;
         try {
-            validator.validate(selected, null, null);
-            activator.activate(selected);
+            UserInfo verifiedUser = validator.validate(selected, null, null);
+            activator.activate(selected, verifiedUser);
+            accountActivated.run();
             model.fireTableDataChanged();
             select(selected);
             status.setText(tr("Account verified and activated."));
