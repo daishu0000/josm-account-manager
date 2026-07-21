@@ -1,0 +1,5 @@
+# Copy this file to proxy.properties and fill in your local proxy settings.
+# proxy.properties is ignored by Git.
+josmDevProxyEnabled=false
+josmDevProxyHost=
+josmDevProxyPort=

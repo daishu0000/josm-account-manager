@@ -4,16 +4,35 @@ plugins {
 
 import org.gradle.api.tasks.JavaExec
 import org.openstreetmap.josm.gradle.plugin.task.github.PublishToGithubReleaseTask
+import java.util.Properties
 
 version = "0.1.0"
 
 val releaseJarName = "account_manager.jar"
 val releaseJarPath = layout.buildDirectory.file("dist/$releaseJarName")
 
-val josmDevProxyEnabled = providers.gradleProperty("josmDevProxyEnabled")
-    .map(String::toBoolean).orElse(true)
-val josmDevProxyHost = providers.gradleProperty("josmDevProxyHost").orElse("127.0.0.1")
-val josmDevProxyPort = providers.gradleProperty("josmDevProxyPort").orElse("7890")
+val localProxyProperties = Properties().apply {
+    val configFile = rootProject.file("proxy.properties")
+    if (configFile.isFile) {
+        configFile.inputStream().use(::load)
+    }
+}
+
+fun proxySetting(name: String, fallback: String = "") =
+    providers.gradleProperty(name).orElse(localProxyProperties.getProperty(name, fallback))
+
+val josmDevProxyEnabled = proxySetting("josmDevProxyEnabled", "false").map(String::toBoolean)
+val josmDevProxyHost = proxySetting("josmDevProxyHost")
+val josmDevProxyPort = proxySetting("josmDevProxyPort")
+
+if (josmDevProxyEnabled.get()) {
+    require(josmDevProxyHost.get().isNotBlank()) {
+        "josmDevProxyHost must be set when the development proxy is enabled"
+    }
+    require(josmDevProxyPort.get().toIntOrNull() in 1..65535) {
+        "josmDevProxyPort must be a number between 1 and 65535"
+    }
+}
 
 val josmJvmArgs = mutableListOf(
     "--add-exports=java.base/sun.security.action=ALL-UNNAMED",
