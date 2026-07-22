@@ -56,6 +56,14 @@ final class ProfileRepository {
      * @return the number of newly imported profiles
      */
     int importStoredJosmAccounts() throws CredentialsAgentException {
+        return importStoredJosmAccounts(null);
+    }
+
+    /**
+     * Imports JOSM accounts, including an OAuth account whose API URL is still
+     * pending in the open native preferences dialog.
+     */
+    int importStoredJosmAccounts(String pendingOAuthApiUrl) throws CredentialsAgentException {
         String currentApiUrl = AccountProfile.normalizeApiUrl(Config.getPref().get(
                 "osm-server.url", PlatformPreset.OSM.apiUrl()));
         String currentHost = URI.create(currentApiUrl).getHost();
@@ -66,6 +74,11 @@ final class ProfileRepository {
                 String presetHost = URI.create(preset.apiUrl()).getHost();
                 apiUrlsByHost.putIfAbsent(presetHost, preset.apiUrl());
             }
+        }
+        String pendingApiUrl = pendingOAuthApiUrl == null || pendingOAuthApiUrl.trim().isEmpty()
+                ? null : AccountProfile.normalizeApiUrl(pendingOAuthApiUrl);
+        if (pendingApiUrl != null) {
+            apiUrlsByHost.put(URI.create(pendingApiUrl).getHost(), pendingApiUrl);
         }
 
         Set<String> basicHosts = new HashSet<>();
@@ -79,6 +92,9 @@ final class ProfileRepository {
             basicHosts.add(currentHost);
         } else {
             oauthHosts.add(currentHost);
+        }
+        if (pendingApiUrl != null) {
+            oauthHosts.add(URI.create(pendingApiUrl).getHost());
         }
         for (String key : preferenceKeys) {
             collectHost(key, "server.username.", basicHosts, apiUrlsByHost);
@@ -116,18 +132,25 @@ final class ProfileRepository {
         AuthenticationMethod method = "basic".equalsIgnoreCase(
                 Config.getPref().get("osm-server.auth-method", "oauth20"))
                         ? AuthenticationMethod.BASIC : AuthenticationMethod.OAUTH20;
-        String host = URI.create(apiUrl).getHost();
+        return currentJosmProfile(apiUrl, method);
+    }
+
+    /** Finds the profile used by a pending native JOSM account selection. */
+    Optional<AccountProfile> currentJosmProfile(String apiUrl, AuthenticationMethod method)
+            throws CredentialsAgentException {
+        String normalizedApiUrl = AccountProfile.normalizeApiUrl(apiUrl);
+        String host = URI.create(normalizedApiUrl).getHost();
         PasswordAuthentication basicCredentials = method == AuthenticationMethod.BASIC
                 ? CredentialsManager.getInstance().lookup(RequestorType.SERVER, host) : null;
         IOAuthToken oauthToken = method == AuthenticationMethod.OAUTH20
-                ? OAuthAccessTokenHolder.getInstance().getAccessToken(apiUrl, OAuthVersion.OAuth20) : null;
+                ? OAuthAccessTokenHolder.getInstance().getAccessToken(normalizedApiUrl, OAuthVersion.OAuth20) : null;
 
         if (method == AuthenticationMethod.BASIC && !isUsable(basicCredentials)
                 || method == AuthenticationMethod.OAUTH20 && oauthToken == null) {
             return Optional.empty();
         }
         return findAll().stream()
-                .filter(profile -> profile.apiUrl().equalsIgnoreCase(apiUrl))
+                .filter(profile -> profile.apiUrl().equalsIgnoreCase(normalizedApiUrl))
                 .filter(profile -> profile.authenticationMethod() == method)
                 .filter(profile -> matchesCredentials(profile, basicCredentials, oauthToken))
                 .findFirst();
@@ -237,6 +260,10 @@ final class ProfileRepository {
 
     void markActive(AccountProfile profile) {
         Config.getPref().put(ACTIVE_PROFILE_KEY, profile.id());
+    }
+
+    void clearActive() {
+        Config.getPref().put(ACTIVE_PROFILE_KEY, null);
     }
 
     private void saveMetadata(List<AccountProfile> profiles) {

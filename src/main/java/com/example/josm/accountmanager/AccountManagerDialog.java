@@ -24,7 +24,7 @@ import org.openstreetmap.josm.tools.Logging;
 /** Main account management window. */
 final class AccountManagerDialog extends JDialog {
     private final ProfileRepository repository;
-    private final AccountActivator activator;
+    private final AccountSyncCoordinator coordinator;
     private final AccountValidator validator;
     private final Runnable accountActivated;
     private final ProfileTableModel model;
@@ -34,7 +34,7 @@ final class AccountManagerDialog extends JDialog {
     AccountManagerDialog(Window owner, ProfileRepository repository, Runnable accountActivated) {
         super(owner, trc("account_manager", "Account Manager"), ModalityType.APPLICATION_MODAL);
         this.repository = repository;
-        this.activator = new AccountActivator(repository);
+        this.coordinator = new AccountSyncCoordinator(repository);
         this.validator = new AccountValidator(repository);
         this.accountActivated = accountActivated;
         this.model = new ProfileTableModel(repository);
@@ -133,7 +133,7 @@ final class AccountManagerDialog extends JDialog {
         if (answer != JOptionPane.OK_OPTION) return;
         try {
             UserInfo verifiedUser = validator.validate(selected, null, null);
-            activator.activate(selected, verifiedUser);
+            coordinator.activate(selected, verifiedUser);
             accountActivated.run();
             model.fireTableDataChanged();
             select(selected);
