@@ -13,6 +13,7 @@ public final class AccountManagerPlugin extends Plugin {
         super(info);
         repository = new ProfileRepository();
         importStoredJosmAccounts(repository);
+        selectCurrentJosmProfileWhenNoneIsActive(repository);
         restoreActiveProfile(repository);
     }
 
@@ -28,6 +29,15 @@ public final class AccountManagerPlugin extends Plugin {
     @Override
     public PreferenceSetting getPreferenceSetting() {
         return new AccountManagerPreference(repository);
+    }
+
+    private static void selectCurrentJosmProfileWhenNoneIsActive(ProfileRepository repository) {
+        if (!repository.activeProfileId().isEmpty()) return;
+        try {
+            repository.currentJosmProfile().ifPresent(repository::markActive);
+        } catch (RuntimeException | org.openstreetmap.josm.io.auth.CredentialsAgentException exception) {
+            Logging.error(exception);
+        }
     }
 
     private static void restoreActiveProfile(ProfileRepository repository) {

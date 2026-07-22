@@ -19,6 +19,7 @@ import org.openstreetmap.josm.gui.preferences.TabPreferenceSetting;
 import org.openstreetmap.josm.gui.preferences.server.AuthenticationPreferencesPanel;
 import org.openstreetmap.josm.gui.preferences.server.OsmApiUrlInputPanel;
 import org.openstreetmap.josm.tools.GBC;
+import org.openstreetmap.josm.tools.Logging;
 
 /** Adds account management to JOSM's existing OSM Server preference page. */
 final class AccountManagerPreference implements SubPreferenceSetting {
@@ -45,6 +46,11 @@ final class AccountManagerPreference implements SubPreferenceSetting {
         JButton manage = new JButton(tr("Manage accounts..."));
         updateSummary(summary);
         manage.addActionListener(event -> {
+            // Native OAuth authorization keeps the freshly obtained token in JOSM's
+            // OAuthAccessTokenHolder until the preferences dialog is applied. Import
+            // it before opening Account Manager so it is immediately available there.
+            synchronizeFromJosm();
+            updateSummary(summary);
             Window owner = SwingUtilities.getWindowAncestor(gui);
             new AccountManagerDialog(owner, repository,
                     () -> refreshNativeAccountPanel(serverPanel)).setVisible(true);
@@ -139,7 +145,21 @@ final class AccountManagerPreference implements SubPreferenceSetting {
 
     @Override
     public boolean ok() {
+        // Run after every preference setting has applied its values. This also covers
+        // users who authorize through JOSM's native panel and close Preferences
+        // without opening Account Manager first.
+        SwingUtilities.invokeLater(this::synchronizeFromJosm);
         return false;
+    }
+
+    private void synchronizeFromJosm() {
+        try {
+            repository.importStoredJosmAccounts();
+        } catch (RuntimeException | org.openstreetmap.josm.io.auth.CredentialsAgentException exception) {
+            // Credential backends are pluggable; a temporary backend failure must not
+            // prevent the native preferences dialog from closing.
+            Logging.error(exception);
+        }
     }
 
     @Override

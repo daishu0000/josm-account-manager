@@ -11,6 +11,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import org.openstreetmap.josm.data.oauth.IOAuthParameters;
@@ -106,6 +107,30 @@ final class ProfileRepository {
         }
         if (importedCount > 0) saveMetadata(profiles);
         return importedCount;
+    }
+
+    /** Finds the profile whose API, authentication method, and credentials JOSM currently uses. */
+    Optional<AccountProfile> currentJosmProfile() throws CredentialsAgentException {
+        String apiUrl = AccountProfile.normalizeApiUrl(Config.getPref().get(
+                "osm-server.url", PlatformPreset.OSM.apiUrl()));
+        AuthenticationMethod method = "basic".equalsIgnoreCase(
+                Config.getPref().get("osm-server.auth-method", "oauth20"))
+                        ? AuthenticationMethod.BASIC : AuthenticationMethod.OAUTH20;
+        String host = URI.create(apiUrl).getHost();
+        PasswordAuthentication basicCredentials = method == AuthenticationMethod.BASIC
+                ? CredentialsManager.getInstance().lookup(RequestorType.SERVER, host) : null;
+        IOAuthToken oauthToken = method == AuthenticationMethod.OAUTH20
+                ? OAuthAccessTokenHolder.getInstance().getAccessToken(apiUrl, OAuthVersion.OAuth20) : null;
+
+        if (method == AuthenticationMethod.BASIC && !isUsable(basicCredentials)
+                || method == AuthenticationMethod.OAUTH20 && oauthToken == null) {
+            return Optional.empty();
+        }
+        return findAll().stream()
+                .filter(profile -> profile.apiUrl().equalsIgnoreCase(apiUrl))
+                .filter(profile -> profile.authenticationMethod() == method)
+                .filter(profile -> matchesCredentials(profile, basicCredentials, oauthToken))
+                .findFirst();
     }
 
     private AccountProfile importAccount(List<AccountProfile> profiles, String apiUrl,
