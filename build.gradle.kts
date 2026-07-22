@@ -3,8 +3,24 @@ plugins {
 }
 
 import org.gradle.api.tasks.JavaExec
+import org.gradle.api.DefaultTask
+import org.gradle.api.tasks.options.Option
 import org.openstreetmap.josm.gradle.plugin.task.github.PublishToGithubReleaseTask
 import java.util.Properties
+
+abstract class ReleaseTask : DefaultTask() {
+    @Option(
+        option = "release-label",
+        description = "the release label, for example 0.2.2",
+    )
+    fun releaseLabel(label: String) {
+        require(label.isNotBlank()) { "release-label must not be blank" }
+        listOf("createGithubRelease", "publishToGithubRelease").forEach { taskName ->
+            val task = project.tasks.named(taskName).get()
+            task.javaClass.getMethod("setReleaseLabel", String::class.java).invoke(task, label)
+        }
+    }
+}
 
 version = "0.2.2"
 
@@ -111,7 +127,7 @@ tasks.named<PublishToGithubReleaseTask>("publishToGithubRelease") {
     remoteJarName = releaseJarName
 }
 
-tasks.register("release") {
+tasks.register<ReleaseTask>("release") {
     group = "release"
     description = "Build dist JAR, create GitHub release, and upload $releaseJarName"
     dependsOn("createGithubRelease", "publishToGithubRelease")
