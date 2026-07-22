@@ -104,6 +104,7 @@ josm {
         mainClass = "com.example.josm.accountmanager.AccountManagerPlugin"
         minJosmVersion = "18991"
         author = "smallCat"
+        iconPath = "images/account_manager.png"
     }
     github {
         repositoryOwner = "daishu0000"
