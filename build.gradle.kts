@@ -87,7 +87,7 @@ josm {
         description = "Manage and switch multiple account profiles for OSM-compatible platforms"
         mainClass = "com.example.josm.accountmanager.AccountManagerPlugin"
         minJosmVersion = "18991"
-        author = "account_manager contributors"
+        author = "smallCat"
     }
     github {
         repositoryOwner = "daishu0000"
