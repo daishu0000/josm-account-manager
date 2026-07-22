@@ -1,6 +1,6 @@
 package com.example.josm.accountmanager;
 
-import static org.openstreetmap.josm.tools.I18n.tr;
+import static com.example.josm.accountmanager.AccountManagerI18n.trc;
 
 /** Authentication mechanism used by an account profile. */
 enum AuthenticationMethod {
@@ -18,6 +18,6 @@ enum AuthenticationMethod {
 
     @Override
     public String toString() {
-        return this == BASIC ? tr("Username and password") : tr("OAuth 2.0");
+        return this == BASIC ? trc("account_manager", "Username and password") : trc("account_manager", "OAuth 2.0");
     }
 }

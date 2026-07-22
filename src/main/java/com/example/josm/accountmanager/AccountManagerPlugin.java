@@ -12,17 +12,7 @@ public final class AccountManagerPlugin extends Plugin {
     public AccountManagerPlugin(PluginInformation info) {
         super(info);
         repository = new ProfileRepository();
-        importStoredJosmAccounts(repository);
-        restoreActiveProfile(repository);
-    }
-
-    private static void importStoredJosmAccounts(ProfileRepository repository) {
-        try {
-            repository.importStoredJosmAccounts();
-        } catch (RuntimeException | org.openstreetmap.josm.io.auth.CredentialsAgentException exception) {
-            // A broken or unavailable credential backend must not prevent JOSM from starting.
-            Logging.error(exception);
-        }
+        synchronizeOnStartup(repository);
     }
 
     @Override
@@ -30,15 +20,23 @@ public final class AccountManagerPlugin extends Plugin {
         return new AccountManagerPreference(repository);
     }
 
-    private static void restoreActiveProfile(ProfileRepository repository) {
-        String activeId = repository.activeProfileId();
-        if (activeId.isEmpty()) return;
+    private static void synchronizeOnStartup(ProfileRepository repository) {
+        String lastActiveId = repository.activeProfileId();
+        AccountSyncCoordinator coordinator = new AccountSyncCoordinator(repository);
+        try {
+            // Respect a complete account selected in JOSM's native settings. Restore
+            // Account Manager's last selection only when native state is incomplete.
+            if (coordinator.reconcileFromJosm().isPresent()) return;
+        } catch (RuntimeException | org.openstreetmap.josm.io.auth.CredentialsAgentException exception) {
+            Logging.error(exception);
+        }
+        if (lastActiveId.isEmpty()) return;
         repository.findAll().stream()
-                .filter(profile -> profile.id().equals(activeId))
+                .filter(profile -> profile.id().equals(lastActiveId))
                 .findFirst()
                 .ifPresent(profile -> {
                     try {
-                        new AccountActivator(repository).activate(profile);
+                        coordinator.activate(profile);
                     } catch (RuntimeException | org.openstreetmap.josm.io.auth.CredentialsAgentException exception) {
                         Logging.error(exception);
                     }

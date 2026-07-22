@@ -24,10 +24,14 @@ public final class AccountProfileTest {
     private static void detectsKnownPlatformFromApiUrl() {
         requireEquals(PlatformPreset.OSM,
                 PlatformPreset.fromApiUrl("https://api.openstreetmap.org/api/"));
+        requireEquals(PlatformPreset.OGF,
+                PlatformPreset.fromApiUrl("https://www.opengeofiction.net/api/"));
         requireEquals(PlatformPreset.OHM,
                 PlatformPreset.fromApiUrl("https://api.openhistoricalmap.org/api/"));
         requireEquals(PlatformPreset.OHM,
                 PlatformPreset.fromApiUrl("https://www.openhistoricalmap.org/api"));
+        requireEquals(PlatformPreset.OHM,
+                PlatformPreset.fromApiUrl("https://openhistoricalmap.org/api/"));
         requireEquals(PlatformPreset.CUSTOM,
                 PlatformPreset.fromApiUrl("https://example.test/api"));
     }

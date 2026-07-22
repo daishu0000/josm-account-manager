@@ -1,12 +1,14 @@
 package com.example.josm.accountmanager;
 
+import static com.example.josm.accountmanager.AccountManagerI18n.trc;
+
 /** Known OSM-compatible services. A custom URL is still allowed for every profile. */
 enum PlatformPreset {
     OSM("OpenStreetMap (OSM)", "https://api.openstreetmap.org/api"),
     OGF("OpenGeofiction (OGF)", "https://opengeofiction.net/api"),
     OHM("OpenHistoricalMap (OHM)", "https://www.openhistoricalmap.org/api"),
     OSMDEV("OpenStreetMap Dev (OSMDEV)","https://master.apis.dev.openstreetmap.org/api"),
-    CUSTOM("Custom", "");
+    CUSTOM(null, "");
 
     private final String displayName;
     private final String apiUrl;
@@ -27,7 +29,13 @@ enum PlatformPreset {
                 return preset;
             }
         }
-        // OHM serves the same Rails API from both its website and dedicated API host.
+        // Recognize alternate hosts that serve the same Rails APIs.
+        if ("https://www.opengeofiction.net/api".equalsIgnoreCase(normalized)) {
+            return OGF;
+        }
+        if ("https://openhistoricalmap.org/api".equalsIgnoreCase(normalized)) {
+            return OHM;
+        }
         if ("https://api.openhistoricalmap.org/api".equalsIgnoreCase(normalized)) {
             return OHM;
         }
@@ -44,6 +52,6 @@ enum PlatformPreset {
 
     @Override
     public String toString() {
-        return displayName;
+        return this == CUSTOM ? trc("account_manager", "Custom") : displayName;
     }
 }

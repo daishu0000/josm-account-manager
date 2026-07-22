@@ -1,6 +1,6 @@
 package com.example.josm.accountmanager;
 
-import static org.openstreetmap.josm.tools.I18n.tr;
+import static com.example.josm.accountmanager.AccountManagerI18n.trc;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,7 +39,7 @@ final class AccountValidator {
                 .setReadTimeout(TIMEOUT_MILLIS)
                 .setAccept("application/xml")
                 .setHeader("Authorization", authorizationHeader(profile, username, newSecret))
-                .setReasonForRequest(tr("Validate account profile"));
+                .setReasonForRequest(trc("account_manager", "Validate account profile"));
         try {
             HttpClient.Response response = client.connect();
             int responseCode = response.getResponseCode();
@@ -47,12 +47,12 @@ final class AccountValidator {
                 return parseUserInfo(response);
             }
             if (responseCode == 401 || responseCode == 403) {
-                throw new IOException(tr("The server rejected these credentials (HTTP {0}).", responseCode));
+                throw new IOException(trc("account_manager", "The server rejected these credentials (HTTP {0}).", responseCode));
             }
             if (responseCode == 404) {
-                throw new IOException(tr("The API URL is not an OSM-compatible API endpoint (HTTP 404)."));
+                throw new IOException(trc("account_manager", "The API URL is not an OSM-compatible API endpoint (HTTP 404)."));
             }
-            throw new IOException(tr("The account validation request failed (HTTP {0}: {1}).",
+            throw new IOException(trc("account_manager", "The account validation request failed (HTTP {0}: {1}).",
                     responseCode, response.getResponseMessage()));
         } finally {
             client.disconnect();
@@ -68,11 +68,11 @@ final class AccountValidator {
             UserInfo userInfo = OsmServerUserInfoReader.buildFromXML(
                     XmlUtils.parseSafeDOM(content));
             if (userInfo.getDisplayName() == null || userInfo.getDisplayName().trim().isEmpty()) {
-                throw new IOException(tr("The account response does not contain a display name."));
+                throw new IOException(trc("account_manager", "The account response does not contain a display name."));
             }
             return userInfo;
         } catch (ParserConfigurationException | SAXException | RuntimeException exception) {
-            throw new IOException(tr("Could not parse the account information returned by the server."), exception);
+            throw new IOException(trc("account_manager", "Could not parse the account information returned by the server."), exception);
         }
     }
 
@@ -98,7 +98,7 @@ final class AccountValidator {
         char[] effectivePassword = newPassword != null && newPassword.length > 0
                 ? newPassword : stored == null ? null : stored.getPassword();
         if (effectiveUsername.isEmpty() || effectivePassword == null || effectivePassword.length == 0) {
-            throw new IllegalStateException(tr("This profile has no username and password."));
+            throw new IllegalStateException(trc("account_manager", "This profile has no username and password."));
         }
         return new PasswordAuthentication(effectiveUsername, effectivePassword);
     }
@@ -112,7 +112,7 @@ final class AccountValidator {
         if (storedToken instanceof OAuth20Token) {
             return ((OAuth20Token) storedToken).getBearerToken();
         }
-        throw new IllegalStateException(tr("This profile has no OAuth 2.0 token."));
+        throw new IllegalStateException(trc("account_manager", "This profile has no OAuth 2.0 token."));
     }
 
     static URL validationUrl(String apiUrl) throws IOException {

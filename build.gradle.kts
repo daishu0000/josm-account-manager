@@ -3,10 +3,26 @@ plugins {
 }
 
 import org.gradle.api.tasks.JavaExec
+import org.gradle.api.DefaultTask
+import org.gradle.api.tasks.options.Option
 import org.openstreetmap.josm.gradle.plugin.task.github.PublishToGithubReleaseTask
 import java.util.Properties
 
-version = "0.2.0"
+abstract class ReleaseTask : DefaultTask() {
+    @Option(
+        option = "release-label",
+        description = "the release label, for example 0.2.2",
+    )
+    fun releaseLabel(label: String) {
+        require(label.isNotBlank()) { "release-label must not be blank" }
+        listOf("createGithubRelease", "publishToGithubRelease").forEach { taskName ->
+            val task = project.tasks.named(taskName).get()
+            task.javaClass.getMethod("setReleaseLabel", String::class.java).invoke(task, label)
+        }
+    }
+}
+
+version = "0.2.5"
 
 val releaseJarName = "account_manager.jar"
 val releaseJarPath = layout.buildDirectory.file("dist/$releaseJarName")
@@ -86,8 +102,9 @@ josm {
     manifest {
         description = "Manage and switch multiple account profiles for OSM-compatible platforms"
         mainClass = "com.example.josm.accountmanager.AccountManagerPlugin"
-        minJosmVersion = "19555"
-        author = "account_manager contributors"
+        minJosmVersion = "18991"
+        author = "smallCat"
+        iconPath = "images/account_manager.png"
     }
     github {
         repositoryOwner = "daishu0000"
@@ -111,7 +128,7 @@ tasks.named<PublishToGithubReleaseTask>("publishToGithubRelease") {
     remoteJarName = releaseJarName
 }
 
-tasks.register("release") {
+tasks.register<ReleaseTask>("release") {
     group = "release"
     description = "Build dist JAR, create GitHub release, and upload $releaseJarName"
     dependsOn("createGithubRelease", "publishToGithubRelease")

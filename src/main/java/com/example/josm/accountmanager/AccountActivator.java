@@ -51,6 +51,5 @@ final class AccountActivator {
         if (verifiedUser != null) {
             identityManager.setFullyIdentified(verifiedUser.getDisplayName(), verifiedUser);
         }
-        repository.markActive(profile);
     }
 }

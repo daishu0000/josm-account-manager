@@ -1,6 +1,6 @@
 package com.example.josm.accountmanager;
 
-import static org.openstreetmap.josm.tools.I18n.tr;
+import static com.example.josm.accountmanager.AccountManagerI18n.trc;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
@@ -36,11 +36,11 @@ final class ProfileEditorDialog {
     private final JComboBox<AuthenticationMethod> authenticationBox =
             new JComboBox<>(AuthenticationMethod.values());
     private final JTextField usernameField = new JTextField(36);
-    private final JLabel usernameLabel = new JLabel(tr("Username") + ':');
+    private final JLabel usernameLabel = new JLabel(trc("account_manager", "Username") + ':');
     private final JPasswordField tokenField = new JPasswordField(36);
-    private final JLabel secretLabel = new JLabel(tr("Token") + ':');
-    private final JButton authorizeButton = new JButton(tr("Authorize now (fully automatic)"));
-    private final JLabel automaticAuthorizationLabel = new JLabel(tr("Automatic authorization") + ':');
+    private final JLabel secretLabel = new JLabel(trc("account_manager", "Token") + ':');
+    private final JButton authorizeButton = new JButton(trc("account_manager", "Authorize now (fully automatic)"));
+    private final JLabel automaticAuthorizationLabel = new JLabel(trc("account_manager", "Automatic authorization") + ':');
     private final JLabel authorizationStatus = new JLabel(" ");
     private final AccountProfile original;
 
@@ -79,10 +79,10 @@ final class ProfileEditorDialog {
         constraints.anchor = GridBagConstraints.WEST;
         constraints.fill = GridBagConstraints.HORIZONTAL;
         constraints.weightx = 1;
-        addRow(form, constraints, 0, tr("Name"), nameField);
-        addRow(form, constraints, 1, tr("Platform"), platformBox);
-        addRow(form, constraints, 2, tr("API URL"), apiUrlField);
-        addRow(form, constraints, 3, tr("Authentication"), authenticationBox);
+        addRow(form, constraints, 0, trc("account_manager", "Name"), nameField);
+        addRow(form, constraints, 1, trc("account_manager", "Platform"), platformBox);
+        addRow(form, constraints, 2, trc("account_manager", "API URL"), apiUrlField);
+        addRow(form, constraints, 3, trc("account_manager", "Authentication"), authenticationBox);
         addRow(form, constraints, 4, usernameLabel, usernameField);
         addRow(form, constraints, 5, secretLabel, tokenField);
         addRow(form, constraints, 6, automaticAuthorizationLabel, authorizeButton);
@@ -92,8 +92,8 @@ final class ProfileEditorDialog {
         authorizeButton.addActionListener(event -> authorizeInBrowser(parent));
 
         String tokenHelp = original == null
-                ? tr("Credentials are stored through JOSM's credential manager.")
-                : tr("Leave the secret field empty to keep the existing password or token.");
+                ? trc("account_manager", "Credentials are stored through JOSM's credential manager.")
+                : trc("account_manager", "Leave the secret field empty to keep the existing password or token.");
         JPanel content = new JPanel(new BorderLayout(0, 8));
         content.add(form, BorderLayout.CENTER);
         JPanel help = new JPanel(new BorderLayout());
@@ -102,7 +102,7 @@ final class ProfileEditorDialog {
         content.add(help, BorderLayout.SOUTH);
 
         while (JOptionPane.showConfirmDialog(parent, content,
-                original == null ? tr("Add account profile") : tr("Edit account profile"),
+                original == null ? trc("account_manager", "Add account profile") : trc("account_manager", "Edit account profile"),
                 JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) == JOptionPane.OK_OPTION) {
             try {
                 PlatformPreset platform = (PlatformPreset) platformBox.getSelectedItem();
@@ -118,16 +118,16 @@ final class ProfileEditorDialog {
                         && original.authenticationMethod() == authenticationMethod;
                 if (!canKeepExisting && secret.length == 0) {
                     throw new IllegalArgumentException(authenticationMethod == AuthenticationMethod.BASIC
-                            ? tr("Password must not be empty") : tr("Token must not be empty"));
+                            ? trc("account_manager", "Password must not be empty") : trc("account_manager", "Token must not be empty"));
                 }
                 if (authenticationMethod == AuthenticationMethod.BASIC
                         && usernameField.getText().trim().isEmpty()) {
-                    throw new IllegalArgumentException(tr("Username must not be empty"));
+                    throw new IllegalArgumentException(trc("account_manager", "Username must not be empty"));
                 }
                 return new Result(profile, usernameField.getText().trim(),
                         secret.length == 0 ? null : secret);
             } catch (IllegalArgumentException exception) {
-                JOptionPane.showMessageDialog(parent, exception.getMessage(), tr("Invalid profile"),
+                JOptionPane.showMessageDialog(parent, exception.getMessage(), trc("account_manager", "Invalid profile"),
                         JOptionPane.ERROR_MESSAGE);
             }
         }
@@ -146,20 +146,20 @@ final class ProfileEditorDialog {
                     : original.withDetails(nameField.getText(), platform, apiUrlField.getText(),
                             authenticationMethod);
         } catch (IllegalArgumentException exception) {
-            JOptionPane.showMessageDialog(parent, exception.getMessage(), tr("Invalid profile"),
+            JOptionPane.showMessageDialog(parent, exception.getMessage(), trc("account_manager", "Invalid profile"),
                     JOptionPane.ERROR_MESSAGE);
             return;
         }
 
         authorizeButton.setEnabled(false);
-        authorizationStatus.setText(tr("Preparing browser authorization..."));
+        authorizationStatus.setText(trc("account_manager", "Preparing browser authorization..."));
         MainApplication.worker.execute(() -> {
             boolean remoteControlWasEnabled = Boolean.TRUE.equals(RemoteControl.PROP_REMOTECONTROL_ENABLED.get());
             try {
                 IOAuthParameters parameters = OAuthParameters.createDefault(
                         profile.apiUrl(), OAuthVersion.OAuth20);
                 if (Utils.isEmpty(parameters.getClientId())) {
-                    throw new IllegalStateException(tr(
+                    throw new IllegalStateException(trc("account_manager",
                             "This server has no OAuth application registered for JOSM. Enter a token manually."));
                 }
                 if (!remoteControlWasEnabled) RemoteControl.start();
@@ -169,23 +169,23 @@ final class ProfileEditorDialog {
                         authorizeButton.setEnabled(true);
                         if (token.isPresent() && token.get() instanceof OAuth20Token) {
                             tokenField.setText(((OAuth20Token) token.get()).getBearerToken());
-                            authorizationStatus.setText(tr("Authorization succeeded. The token was obtained automatically."));
+                            authorizationStatus.setText(trc("account_manager", "Authorization succeeded. The token was obtained automatically."));
                         } else {
-                            authorizationStatus.setText(tr("Authorization failed or was canceled."));
+                            authorizationStatus.setText(trc("account_manager", "Authorization failed or was canceled."));
                         }
                     });
                 }, OsmScopes.read_prefs, OsmScopes.write_api);
                 javax.swing.SwingUtilities.invokeLater(() ->
-                        authorizationStatus.setText(tr("Complete authorization in the opened browser.")));
+                        authorizationStatus.setText(trc("account_manager", "Complete authorization in the opened browser.")));
             } catch (RuntimeException exception) {
                 if (!remoteControlWasEnabled) RemoteControl.stop();
                 Logging.error(exception);
                 javax.swing.SwingUtilities.invokeLater(() -> {
                     authorizeButton.setEnabled(true);
-                    authorizationStatus.setText(tr("Could not start automatic authorization."));
+                    authorizationStatus.setText(trc("account_manager", "Could not start automatic authorization."));
                     JOptionPane.showMessageDialog(parent,
-                            tr("Could not start automatic authorization: {0}", exception.getMessage()),
-                            tr("OAuth authorization"), JOptionPane.ERROR_MESSAGE);
+                            trc("account_manager", "Could not start automatic authorization: {0}", exception.getMessage()),
+                            trc("account_manager", "OAuth authorization"), JOptionPane.ERROR_MESSAGE);
                 });
             }
         });
@@ -195,10 +195,10 @@ final class ProfileEditorDialog {
         boolean basic = authenticationBox.getSelectedItem() == AuthenticationMethod.BASIC;
         usernameLabel.setVisible(basic);
         usernameField.setVisible(basic);
-        secretLabel.setText((basic ? tr("Password") : tr("Token")) + ':');
+        secretLabel.setText((basic ? trc("account_manager", "Password") : trc("account_manager", "Token")) + ':');
         automaticAuthorizationLabel.setVisible(!basic);
         authorizeButton.setVisible(!basic);
-        tokenField.setToolTipText(basic ? tr("Account password") : tr("OAuth 2.0 access token"));
+        tokenField.setToolTipText(basic ? trc("account_manager", "Account password") : trc("account_manager", "OAuth 2.0 access token"));
     }
 
     private static void addRow(JPanel panel, GridBagConstraints constraints, int row,

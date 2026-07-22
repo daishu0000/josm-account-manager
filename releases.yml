@@ -1,4 +1,20 @@
 releases:
+  - label: 0.2.4
+    minJosmVersion: 18991
+    description: |
+      synchronize josm verified and activated accounts
+  - label: 0.2.3
+    minJosmVersion: 18991
+    description: |
+      add icon
+  - label: 0.2.2
+    minJosmVersion: 18991
+    description: |
+      add author and icon
+  - label: 0.2.1
+    minJosmVersion: 18991
+    description: |
+      降低josm版本要求至18991
   - label: 0.2.0
     minJosmVersion: 19555
     description: |
