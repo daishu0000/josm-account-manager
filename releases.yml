@@ -1,4 +1,8 @@
 releases:
+  - label: 0.2.4
+    minJosmVersion: 18991
+    description: |
+      synchronize josm verified and activated accounts
   - label: 0.2.3
     minJosmVersion: 18991
     description: |
