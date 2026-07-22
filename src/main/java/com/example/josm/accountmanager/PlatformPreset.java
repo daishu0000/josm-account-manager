@@ -5,6 +5,7 @@ enum PlatformPreset {
     OSM("OpenStreetMap (OSM)", "https://api.openstreetmap.org/api"),
     OGF("OpenGeofiction (OGF)", "https://opengeofiction.net/api"),
     OHM("OpenHistoricalMap (OHM)", "https://www.openhistoricalmap.org/api"),
+    OSMDEV("OpenStreetMap Dev (OSMDEV)","https://master.apis.dev.openstreetmap.org/api"),
     CUSTOM("Custom", "");
 
     private final String displayName;
