@@ -1,4 +1,8 @@
 releases:
+  - label: 0.2.3
+    minJosmVersion: 18991
+    description: |
+      add icon
   - label: 0.2.2
     minJosmVersion: 18991
     description: |
