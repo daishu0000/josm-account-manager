@@ -28,7 +28,13 @@ enum PlatformPreset {
                 return preset;
             }
         }
-        // OHM serves the same Rails API from both its website and dedicated API host.
+        // Recognize alternate hosts that serve the same Rails APIs.
+        if ("https://www.opengeofiction.net/api".equalsIgnoreCase(normalized)) {
+            return OGF;
+        }
+        if ("https://openhistoricalmap.org/api".equalsIgnoreCase(normalized)) {
+            return OHM;
+        }
         if ("https://api.openhistoricalmap.org/api".equalsIgnoreCase(normalized)) {
             return OHM;
         }
