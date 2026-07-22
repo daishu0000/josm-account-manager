@@ -1,4 +1,11 @@
 releases:
+  - label: 0.3.0
+    minJosmVersion: 18991
+    description: |
+      add Simplified Chinese localization
+      synchronize account changes made in JOSM's native preferences
+      add an OpenStreetMap Dev platform preset
+      support additional OpenGeofiction and OpenHistoricalMap API URLs
   - label: 0.2.4
     minJosmVersion: 18991
     description: |
