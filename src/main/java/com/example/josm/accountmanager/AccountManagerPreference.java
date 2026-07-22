@@ -1,6 +1,6 @@
 package com.example.josm.accountmanager;
 
-import static org.openstreetmap.josm.tools.I18n.tr;
+import static com.example.josm.accountmanager.AccountManagerI18n.trc;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
@@ -41,9 +41,9 @@ final class AccountManagerPreference implements SubPreferenceSetting {
         if (serverPanel == null) return;
 
         JPanel section = new JPanel(new BorderLayout(8, 8));
-        section.setBorder(BorderFactory.createTitledBorder(tr("Account Manager")));
+        section.setBorder(BorderFactory.createTitledBorder(trc("account_manager", "Account Manager")));
         JLabel summary = new JLabel();
-        JButton manage = new JButton(tr("Manage accounts..."));
+        JButton manage = new JButton(trc("account_manager", "Manage accounts..."));
         updateSummary(summary);
         manage.addActionListener(event -> {
             // Native OAuth authorization keeps the freshly obtained token in JOSM's
@@ -123,8 +123,8 @@ final class AccountManagerPreference implements SubPreferenceSetting {
                 .findFirst()
                 .orElse(null);
         summary.setText(activeName == null
-                ? tr("No account profile is active.")
-                : tr("Active account: {0}", activeName));
+                ? trc("account_manager", "No account profile is active.")
+                : trc("account_manager", "Active account: {0}", activeName));
     }
 
     private static PreferenceTabbedPane.PreferencePanel findServerPanel(

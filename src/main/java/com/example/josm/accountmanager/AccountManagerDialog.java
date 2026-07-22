@@ -1,6 +1,6 @@
 package com.example.josm.accountmanager;
 
-import static org.openstreetmap.josm.tools.I18n.tr;
+import static com.example.josm.accountmanager.AccountManagerI18n.trc;
 
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
@@ -32,7 +32,7 @@ final class AccountManagerDialog extends JDialog {
     private final JLabel status = new JLabel(" ");
 
     AccountManagerDialog(Window owner, ProfileRepository repository, Runnable accountActivated) {
-        super(owner, tr("Account Manager"), ModalityType.APPLICATION_MODAL);
+        super(owner, trc("account_manager", "Account Manager"), ModalityType.APPLICATION_MODAL);
         this.repository = repository;
         this.activator = new AccountActivator(repository);
         this.validator = new AccountValidator(repository);
@@ -55,11 +55,11 @@ final class AccountManagerDialog extends JDialog {
         add(new JScrollPane(table), BorderLayout.CENTER);
 
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.LEADING));
-        JButton add = new JButton(tr("Add"));
-        JButton edit = new JButton(tr("Edit"));
-        JButton delete = new JButton(tr("Delete"));
-        JButton activate = new JButton(tr("Activate"));
-        JButton close = new JButton(tr("Close"));
+        JButton add = new JButton(trc("account_manager", "Add"));
+        JButton edit = new JButton(trc("account_manager", "Edit"));
+        JButton delete = new JButton(trc("account_manager", "Delete"));
+        JButton activate = new JButton(trc("account_manager", "Activate"));
+        JButton close = new JButton(trc("account_manager", "Close"));
         actions.add(add);
         actions.add(edit);
         actions.add(delete);
@@ -99,9 +99,9 @@ final class AccountManagerDialog extends JDialog {
             repository.save(result.profile, result.username, result.secret);
             model.reload();
             select(result.profile);
-            status.setText(tr("Account verified and saved."));
+            status.setText(trc("account_manager", "Account verified and saved."));
         } catch (Exception exception) {
-            showError(tr("Could not verify or save the profile"), exception);
+            showError(trc("account_manager", "Could not verify or save the profile"), exception);
         } finally {
             if (result.secret != null) java.util.Arrays.fill(result.secret, '\0');
         }
@@ -111,15 +111,15 @@ final class AccountManagerDialog extends JDialog {
         AccountProfile selected = selectedProfile();
         if (selected == null) return;
         int answer = JOptionPane.showConfirmDialog(this,
-                tr("Delete profile ''{0}'' and its stored token?", selected.name()),
-                tr("Delete account profile"), JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+                trc("account_manager", "Delete profile ''{0}'' and its stored token?", selected.name()),
+                trc("account_manager", "Delete account profile"), JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
         if (answer != JOptionPane.YES_OPTION) return;
         try {
             repository.delete(selected);
             model.reload();
             updateStatus();
         } catch (Exception exception) {
-            showError(tr("Could not delete the profile"), exception);
+            showError(trc("account_manager", "Could not delete the profile"), exception);
         }
     }
 
@@ -127,9 +127,9 @@ final class AccountManagerDialog extends JDialog {
         AccountProfile selected = selectedProfile();
         if (selected == null) return;
         int answer = JOptionPane.showConfirmDialog(this,
-                tr("Activate ''{0}''? Future downloads and uploads will use {1}. Existing layers are not moved.",
+                trc("account_manager", "Activate ''{0}''? Future downloads and uploads will use {1}. Existing layers are not moved.",
                         selected.name(), selected.apiUrl()),
-                tr("Switch account"), JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE);
+                trc("account_manager", "Switch account"), JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE);
         if (answer != JOptionPane.OK_OPTION) return;
         try {
             UserInfo verifiedUser = validator.validate(selected, null, null);
@@ -137,9 +137,9 @@ final class AccountManagerDialog extends JDialog {
             accountActivated.run();
             model.fireTableDataChanged();
             select(selected);
-            status.setText(tr("Account verified and activated."));
+            status.setText(trc("account_manager", "Account verified and activated."));
         } catch (Exception exception) {
-            showError(tr("Could not verify or activate the profile"), exception);
+            showError(trc("account_manager", "Could not verify or activate the profile"), exception);
         }
     }
 
@@ -160,25 +160,25 @@ final class AccountManagerDialog extends JDialog {
     private void updateStatus() {
         AccountProfile selected = selectedProfile();
         if (selected == null) {
-            status.setText(tr("Select a profile. Double-clicking also activates it."));
+            status.setText(trc("account_manager", "Select a profile. Double-clicking also activates it."));
         } else {
             status.setText(repository.hasCredentials(selected)
-                    ? tr("Credentials are stored in the current JOSM credential manager.")
-                    : tr("No credentials are stored. Edit this profile before activating it."));
+                    ? trc("account_manager", "Credentials are stored in the current JOSM credential manager.")
+                    : trc("account_manager", "No credentials are stored. Edit this profile before activating it."));
         }
     }
 
     private void showError(String message, Exception exception) {
         Logging.error(exception);
         JOptionPane.showMessageDialog(this, message + ": " + exception.getMessage(),
-                tr("Account Manager"), JOptionPane.ERROR_MESSAGE);
+                trc("account_manager", "Account Manager"), JOptionPane.ERROR_MESSAGE);
     }
 
     private static final class ProfileTableModel extends AbstractTableModel {
         private final ProfileRepository repository;
         private List<AccountProfile> profiles = new ArrayList<>();
-        private final String[] columns = {tr("Active"), tr("Name"), tr("Platform"),
-                tr("Authentication"), tr("API URL"), tr("Credentials")};
+        private final String[] columns = {trc("account_manager", "Active"), trc("account_manager", "Name"), trc("account_manager", "Platform"),
+                trc("account_manager", "Authentication"), trc("account_manager", "API URL"), trc("account_manager", "Credentials")};
 
         ProfileTableModel(ProfileRepository repository) {
             this.repository = repository;
@@ -211,7 +211,7 @@ final class AccountManagerDialog extends JDialog {
                 case 2: return profile.platform().toString();
                 case 3: return profile.authenticationMethod().toString();
                 case 4: return profile.apiUrl();
-                case 5: return repository.hasCredentials(profile) ? tr("Stored") : tr("Missing");
+                case 5: return repository.hasCredentials(profile) ? trc("account_manager", "Stored") : trc("account_manager", "Missing");
                 default: return "";
             }
         }

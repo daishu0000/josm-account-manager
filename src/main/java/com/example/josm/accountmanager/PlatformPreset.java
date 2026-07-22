@@ -1,11 +1,13 @@
 package com.example.josm.accountmanager;
 
+import static com.example.josm.accountmanager.AccountManagerI18n.trc;
+
 /** Known OSM-compatible services. A custom URL is still allowed for every profile. */
 enum PlatformPreset {
     OSM("OpenStreetMap (OSM)", "https://api.openstreetmap.org/api"),
     OGF("OpenGeofiction (OGF)", "https://opengeofiction.net/api"),
     OHM("OpenHistoricalMap (OHM)", "https://www.openhistoricalmap.org/api"),
-    CUSTOM("Custom", "");
+    CUSTOM(null, "");
 
     private final String displayName;
     private final String apiUrl;
@@ -43,6 +45,6 @@ enum PlatformPreset {
 
     @Override
     public String toString() {
-        return displayName;
+        return this == CUSTOM ? trc("account_manager", "Custom") : displayName;
     }
 }
