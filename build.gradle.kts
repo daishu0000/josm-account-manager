@@ -86,7 +86,7 @@ josm {
     manifest {
         description = "Manage and switch multiple account profiles for OSM-compatible platforms"
         mainClass = "com.example.josm.accountmanager.AccountManagerPlugin"
-        minJosmVersion = "19555"
+        minJosmVersion = "18991"
         author = "account_manager contributors"
     }
     github {
