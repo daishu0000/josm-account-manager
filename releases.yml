@@ -1,4 +1,8 @@
 releases:
+  - label: 0.2.1
+    minJosmVersion: 18991
+    description: |
+      降低josm版本要求至18991
   - label: 0.2.0
     minJosmVersion: 19555
     description: |

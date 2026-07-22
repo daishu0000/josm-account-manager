@@ -6,7 +6,7 @@ import org.gradle.api.tasks.JavaExec
 import org.openstreetmap.josm.gradle.plugin.task.github.PublishToGithubReleaseTask
 import java.util.Properties
 
-version = "0.2.0"
+version = "0.2.1"
 
 val releaseJarName = "account_manager.jar"
 val releaseJarPath = layout.buildDirectory.file("dist/$releaseJarName")
