@@ -105,6 +105,7 @@ josm {
         minJosmVersion = "18991"
         author = "smallCat"
         iconPath = "images/account_manager.png"
+        website("https://wiki.openstreetmap.org/wiki/JOSM/Plugins/account_manager")
     }
     github {
         repositoryOwner = "daishu0000"
