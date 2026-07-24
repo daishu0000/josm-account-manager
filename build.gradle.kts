@@ -22,7 +22,7 @@ abstract class ReleaseTask : DefaultTask() {
     }
 }
 
-version = "0.3.0"
+version = "0.3.1"
 
 val releaseJarName = "account_manager.jar"
 val releaseJarPath = layout.buildDirectory.file("dist/$releaseJarName")

@@ -1,4 +1,8 @@
 releases:
+  - label: 0.3.1
+    minJosmVersion: 18991
+    description: |
+      link the plugin listing to its OpenStreetMap Wiki documentation
   - label: 0.3.0
     minJosmVersion: 18991
     description: |
